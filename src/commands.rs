@@ -4,14 +4,14 @@ use anyhow::Result;
 
 pub struct CommandHandler {
     commands: HashSet<Command>,
-    context: CommandContext,
+    manager: EventsManager
 }
 
 impl CommandHandler {
     pub fn new(manager: EventsManager) -> Self {
         Self {
             commands: HashSet::new(),
-            context: CommandContext { manger: manager }
+            manager: manager
         }
     }
     pub fn add_command(&mut self, command: Command) -> Result<()> {
@@ -31,7 +31,7 @@ impl CommandHandler {
         self.commands.remove(&Command {
             name: name.into(),
             args_num: None,
-            function: Box::new(|_,_|{Ok(())})
+            function: Box::new(|_|{Ok(())})
         });
         Ok(())
     }
@@ -52,7 +52,11 @@ impl CommandHandler {
                         return Err(anyhow::anyhow!("Invalid argument count!"))
                     }
                 }
-                (command.function)(&mut self.context, args.clone())?;
+                let mut context = CommandContext {
+                    manager: &mut self.manager,
+                    args: args,
+                };
+                (command.function)(&mut context)?;
                 return Ok(());
             }
         }
@@ -64,7 +68,7 @@ impl CommandHandler {
 pub struct Command {
     pub name: String,
     pub args_num: Option<usize>,
-    pub function: Box<dyn Fn(&mut CommandContext, Vec<String>) -> Result<()>>
+    pub function: Box<dyn Fn(&mut CommandContext) -> Result<()>>
 }
 use std::hash::{Hash, Hasher};
 
@@ -83,12 +87,16 @@ impl PartialEq for Command {
 
 impl Eq for Command {}
 
-pub struct CommandContext {
-    manger: EventsManager
+pub struct CommandContext<'a> {
+    manager: &'a mut EventsManager,
+    args: Vec<String>,
 }
-impl CommandContext {
+impl<'a> CommandContext<'a> {
     pub fn manager(&mut self) -> &mut EventsManager {
-        &mut self.manger
+        &mut self.manager
+    }
+    pub fn args(&mut self) -> &mut Vec<String> {
+        &mut self.args
     }
 }
 

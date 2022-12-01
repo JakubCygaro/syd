@@ -8,6 +8,7 @@ fn main() {
     let manager = EventsManager::default().unwrap();
     let mut handler = CommandHandler::new(manager);
     handler.add_module::<modules::GeneralModule>();
+    handler.add_module::<modules::TestModule>();
     // handler.add_command(Command {
     //     name: "id".into(),
     //     function: Box::new(|context,args|{

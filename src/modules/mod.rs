@@ -10,24 +10,14 @@ use anyhow::{
     anyhow,
     Result,
 };
+use syd_macros::command_module;
+
 
 pub struct GeneralModule;
 
-impl CommandModule for GeneralModule {
-    fn init() -> Vec<Command> {
-        let mut commands = vec![];
-        commands.push(Command {
-            name: "all".into(),
-            args_num: Some(0),
-            function: Box::new(Self::all),
-        });
-
-        commands
-    }
-}
-
+#[command_module]
 impl GeneralModule {
-    fn all(context: &mut CommandContext, _args: Vec<String>) -> Result<()> {
+    pub fn all(context: &mut CommandContext) -> Result<()> {
 
         let events = context.manager().get_all()?;
         for e in events {
@@ -35,20 +25,18 @@ impl GeneralModule {
         }
         Ok(())
     }
-    // fn today(context: &mut CommandContext, _args: Vec<String>) -> Result<()> {
+    pub fn dupa(context: &mut CommandContext) -> Result<()> {
+        println!("CHUJ");
+        Ok(())
+    }
+}
 
-        
+pub struct TestModule;
 
-    //     let events = context.manager()
-    //             .get_events(WeekEvent 
-    //                 { 
-    //                     id: None, 
-    //                     name: "".into(), 
-    //                     day: , 
-    //                     starth: (), 
-    //                     endh: (), 
-    //                     is_lecture: () 
-    //                 })?;
-    //     Ok(())
-    // }
+#[command_module]
+impl TestModule {
+    pub fn test(context: &mut CommandContext) -> Result<()> {
+        println!("Working!");
+        Ok(())
+    }
 }
