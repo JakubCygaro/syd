@@ -17,6 +17,8 @@ pub struct GeneralModule;
 
 #[command_module]
 impl GeneralModule {
+    #[command_args(0)]
+    #[command_description("lists all database entries")]
     pub fn all(context: &mut CommandContext) -> Result<()> {
 
         let events = context.manager().get_all()?;
@@ -27,6 +29,7 @@ impl GeneralModule {
     }
     
     #[command_args(1)]
+    #[command_description("looks for an entry with provided id")]
     pub fn get(context: &mut CommandContext) -> Result<()> {
         let id: i32 = context
             .args()[0]

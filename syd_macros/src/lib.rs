@@ -205,9 +205,9 @@ fn get_args_count(attrs: &Vec<Attribute>) -> Option<i32> {
 
 fn get_description(attrs: &Vec<Attribute>) -> Option<String> {
     let valid = attrs.iter()
-    .filter(|a| a.path.segments.last()
-        .unwrap().ident == "command_description")
-    .collect::<Vec<&Attribute>>();
+        .filter(|a| a.path.segments.last()
+            .unwrap().ident == "command_description")
+        .collect::<Vec<&Attribute>>();
 
     if let Some(first) = valid.first() {
         let Ok(syn::Lit::Str(d)) 
