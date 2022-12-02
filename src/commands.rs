@@ -24,6 +24,9 @@ impl CommandHandler {
         }
         Ok(())
     }
+    ///Registers commands from a type that implements `CommandModule`
+    /// 
+    /// If a command has already been registered this method will return `Err`
     pub fn add_module<T: CommandModule>(&mut self) -> Result<()> {
         let commands = T::init();
         for command in &commands {
@@ -38,6 +41,7 @@ impl CommandHandler {
     pub fn remove_command(&mut self, name: &str) -> Result<()> {
         self.commands.remove(&Command {
             name: name.into(),
+            desc: None,
             args_num: None,
             function: Box::new(|_|{Ok(())})
         });
@@ -57,7 +61,8 @@ impl CommandHandler {
                 args.remove(0);
                 if let Some(count) = command.args_num {
                     if args.len() != count {
-                        return Err(anyhow::anyhow!("Invalid argument count!"))
+                        return Err(anyhow::anyhow!("Invalid argument count! (expected {})", 
+                                                                                count))
                     }
                 }
                 let mut context = CommandContext {
@@ -70,16 +75,18 @@ impl CommandHandler {
         }
         Err(anyhow::anyhow!("Command not found!"))
     }
-    pub fn commands_names(&self) -> Vec<&str> {
+    ///Actually returns the names and descriptions
+    pub fn commands_names(&self) -> Vec<(&str, &Option<String>)> {
         self.commands.iter()
-            .map(|c| c.name.as_str())
-            .collect::<Vec<&str>>()
+            .map(|c| (c.name.as_str(), &c.desc))
+            .collect::<Vec<(&str, &Option<String>)>>()
     }
 }
 
 
 pub struct Command {
     pub name: String,
+    pub desc: Option<String>,
     pub args_num: Option<usize>,
     pub function: Box<dyn Fn(&mut CommandContext) -> Result<()>>
 }

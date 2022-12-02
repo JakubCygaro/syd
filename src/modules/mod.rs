@@ -29,9 +29,7 @@ impl GeneralModule {
     #[command_args(1)]
     pub fn get(context: &mut CommandContext) -> Result<()> {
         let id: i32 = context
-            .args()
-            .get(0)
-            .ok_or_else(|| anyhow!("ivalid argument count"))?
+            .args()[0]
             .to_owned()
             .parse()?;
         let event = context.manager().get_event(id)?;
@@ -44,6 +42,8 @@ pub struct TestModule;
 
 #[command_module]
 impl TestModule {
+
+    #[command_description("test command")]
     pub fn test(context: &mut CommandContext) -> Result<()> {
         println!("Working!");
         Ok(())
