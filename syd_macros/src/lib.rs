@@ -61,7 +61,8 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
             let mut args_count = None::<i32>;
             if !&i.attrs.is_empty(){
                 let valid = i.attrs.iter()
-                    .filter(|a| a.path.segments.last().unwrap().ident == "command_args")
+                    .filter(|a| a.path.segments.last()
+                        .unwrap().ident == "command_args")
                     .collect::<Vec<&Attribute>>();
                 if let Some(first) = valid.first() {
                     let Ok(syn::Lit::Int(count)) 
@@ -84,15 +85,28 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
         let mut stmts = vec![];
         for (m, a) in methods {
             let path = &m.sig.ident;
-            //let call = format!("Self::{}", path);
-            let stmt: syn::Stmt = syn::parse_quote!{
-                commands.push( Command {
-                    name: stringify!(#path).into(),
-                    args_num: #a,
-                    function: Box::new(Self::#path),
-                });
-            };
-            stmts.push(stmt);
+            if let Some(count) = a {
+                let count = count as usize;
+                let stmt: syn::Stmt = syn::parse_quote!{
+                    commands.push( Command {
+                        name: stringify!(#path).into(),
+                        args_num: Some(#count),
+                        function: Box::new(Self::#path),
+                    });
+                };
+                stmts.push(stmt);
+            }
+            else {
+                let stmt: syn::Stmt = syn::parse_quote!{
+                    commands.push( Command {
+                        name: stringify!(#path).into(),
+                        args_num: None,
+                        function: Box::new(Self::#path),
+                    });
+                };
+                stmts.push(stmt);
+            }
+
         }
         init_method.block.stmts.extend(stmts);
 
@@ -130,10 +144,20 @@ pub fn command_args(args: TokenStream, item: TokenStream) -> TokenStream {
 
 fn impl_command_args(function: &syn::ItemFn, args: &Vec<syn::NestedMeta>) -> TokenStream {
     if args.len() != 1 {
-        panic!("the `command_args` macro must contain only one argument of type i32");
+        panic!("the `command_args` macro must contain only one argument of type usize");
     }
-    let Some(syn::NestedMeta::Lit(nested)) = args.first() else {panic!("todo")};
-    let syn::Lit::Int(_) = nested else {panic!("todo 2")};
+    let Some(syn::NestedMeta::Lit(nested)) = args.first() else 
+        { panic!("failed parsing attribute argument") };
+    let syn::Lit::Int(lit) = nested else 
+        { panic!("failed parsing attribute argument") };
+    lit.base10_parse::<usize>().expect("macro argument must be of type usize");
+
+    //enforce that there is only one attribute of this type used
+    let attrs = &function.attrs;
+    if attrs.iter()
+        .any(|a| a.path.segments.last().unwrap().ident == "command_args") {
+            panic!("this attribute can only be used once.")
+    }
 
     quote!{
         #function
