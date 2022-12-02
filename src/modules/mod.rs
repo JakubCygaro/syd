@@ -10,7 +10,7 @@ use anyhow::{
     anyhow,
     Result,
 };
-use syd_macros::command_module;
+use syd_macros::*;
 
 
 pub struct GeneralModule;
@@ -25,8 +25,17 @@ impl GeneralModule {
         }
         Ok(())
     }
-    pub fn dupa(context: &mut CommandContext) -> Result<()> {
-        println!("CHUJ");
+    
+    #[command_args(1)]
+    pub fn get(context: &mut CommandContext) -> Result<()> {
+        let id: i32 = context
+            .args()
+            .get(0)
+            .ok_or_else(|| anyhow!("ivalid argument count"))?
+            .to_owned()
+            .parse()?;
+        let event = context.manager().get_event(id)?;
+        println!("{}", event);
         Ok(())
     }
 }

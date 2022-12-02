@@ -105,3 +105,23 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
         
     }
 }
+
+#[proc_macro_attribute]
+pub fn command_args(args: TokenStream, item: TokenStream) -> TokenStream {
+    let method_ast = syn::parse_macro_input!(item as syn::ItemFn);
+    let args_ast = syn::parse_macro_input!(args as syn::AttributeArgs);
+
+    impl_command_args(&method_ast, &args_ast)
+}
+
+fn impl_command_args(function: &syn::ItemFn, args: &Vec<syn::NestedMeta>) -> TokenStream {
+    if args.len() != 1 {
+        panic!("the `command_args` macro must contain only one argument of type i32");
+    }
+    let Some(syn::NestedMeta::Lit(nested)) = args.first() else {panic!("todo")};
+    let syn::Lit::Int(_) = nested else {panic!("todo 2")};
+
+    quote!{
+        #function
+    }.into()
+}

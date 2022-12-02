@@ -7,35 +7,31 @@ use syd::*;
 fn main() {
     let manager = EventsManager::default().unwrap();
     let mut handler = CommandHandler::new(manager);
-    handler.add_module::<modules::GeneralModule>();
-    handler.add_module::<modules::TestModule>();
-    // handler.add_command(Command {
-    //     name: "id".into(),
-    //     function: Box::new(|context,args|{
-    //         if args.len() != 1 {
-    //             return Err(anyhow::anyhow!("Invalid parameter count!"))
-    //         }
-    //         let event_id: i32 = args.get(0)
-    //                                 .unwrap()
-    //                                 .to_owned()
-    //                                 .trim()
-    //                                 .parse()?;
-    //         let ev = context.manager()
-    //                                 .get_event(event_id)?;
-    //         println!("{:?}", ev);
-    //         Ok(())
-    //     }),
-    // }).unwrap();
-
+    handler.add_module::<modules::GeneralModule>().unwrap();
+    handler.add_module::<modules::TestModule>().unwrap();
     use std::io;
-    let mut buff = String::from("");
-    println!("type...");
-    io::stdin().read_line(&mut buff).unwrap();
-    let buff = buff.trim();
+    startup_message();
+    loop {
+        let mut buff = String::from("");
+        io::stdin().read_line(&mut buff).unwrap();
+        let buff = buff.trim();
+        match buff {
+            ".quit" => break,
+            ".commands" => {
+                for n in handler.commands_names() {
+                    println!("{}", n);
+                }
+            },
+            _ => handler.handle(buff.into()).or_else(|e| {
+                    println!("{:?}", e);
+                    Ok::<_, &str>(())
+                }).unwrap_or_else(|err| println!("{}", err)),
+        }
+    }
+}
 
-    handler.handle(buff.into()).or_else(|e| {
-        println!("{:?}", e);
-        Ok::<_, &str>(())
-    }).unwrap();
-
+fn startup_message() {
+    println!("==|SYD 0.1|==");
+    println!("type `.quit` to exit the program.");
+    println!("type `.commands` to get all commands.");
 }

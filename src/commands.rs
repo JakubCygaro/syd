@@ -1,4 +1,4 @@
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashSet};
 
 use anyhow::Result;
 
@@ -24,8 +24,16 @@ impl CommandHandler {
         }
         Ok(())
     }
-    pub fn add_module<T: CommandModule>(&mut self) {
-        self.commands.extend(T::init().into_iter())
+    pub fn add_module<T: CommandModule>(&mut self) -> Result<()> {
+        let commands = T::init();
+        for command in &commands {
+            if self.commands.contains(command) {
+                return Err(anyhow::anyhow!("Command with name {} already registered!", 
+                    &command.name));
+            }
+        }
+        self.commands.extend(commands.into_iter());
+        Ok(())
     }
     pub fn remove_command(&mut self, name: &str) -> Result<()> {
         self.commands.remove(&Command {
@@ -61,6 +69,11 @@ impl CommandHandler {
             }
         }
         Err(anyhow::anyhow!("Command not found!"))
+    }
+    pub fn commands_names(&self) -> Vec<&str> {
+        self.commands.iter()
+            .map(|c| c.name.as_str())
+            .collect::<Vec<&str>>()
     }
 }
 

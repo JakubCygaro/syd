@@ -153,11 +153,13 @@ impl Display for Day {
 
 impl Display for WeekEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        
         write!(f, "Day: {}\n", self.day)?;
         write!(f, "Event: {}\n", self.name)?;
         write!(f, "Is lecture?: {}\n", self.is_lecture)?;
         write!(f, "Starts at: {}\n", self.starth)?;
-        write!(f, "Ends at: {}\n", self.endh)
+        write!(f, "Ends at: {}\n", self.endh)?;
+        write!(f, "ID: {}\n", self.id.unwrap())
     }
 }
 
