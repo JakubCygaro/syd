@@ -18,8 +18,8 @@ fn main() {
         match buff {
             ".quit" => break,
             ".commands" => {
-                for n in handler.commands_names() {
-                    println!("{}", n);
+                for (n, d) in handler.commands_names() {
+                    println!("{} -> {}", n, d.clone().unwrap_or("no description".to_owned()));
                 }
             },
             _ => handler.handle(buff.into()).or_else(|e| {

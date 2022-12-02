@@ -24,6 +24,9 @@ impl CommandHandler {
         }
         Ok(())
     }
+    ///Registers commands from a type that implements `CommandModule`
+    /// 
+    /// If a command has already been registered this method will return `Err`
     pub fn add_module<T: CommandModule>(&mut self) -> Result<()> {
         let commands = T::init();
         for command in &commands {
@@ -72,10 +75,11 @@ impl CommandHandler {
         }
         Err(anyhow::anyhow!("Command not found!"))
     }
-    pub fn commands_names(&self) -> Vec<&str> {
+    ///Actually returns the names and descriptions
+    pub fn commands_names(&self) -> Vec<(&str, &Option<String>)> {
         self.commands.iter()
-            .map(|c| c.name.as_str())
-            .collect::<Vec<&str>>()
+            .map(|c| (c.name.as_str(), &c.desc))
+            .collect::<Vec<(&str, &Option<String>)>>()
     }
 }
 
