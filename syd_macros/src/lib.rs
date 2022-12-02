@@ -1,7 +1,7 @@
-use std::ops::Deref;
+use std::{ops::Deref, fmt::Arguments};
 
 use proc_macro::TokenStream;
-use syn;
+use syn::{self, Attribute};
 use quote::quote;
 
 #[proc_macro_attribute]
@@ -23,6 +23,7 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
         {
             // get method args
             let inputs = &i.sig.inputs;
+            
             // method must have only 2 args
             if inputs.len() != 1 { continue; }
             // first arg cannot be self
@@ -57,7 +58,20 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
             if let syn::Type::Path(path) = gen_ty {
                 continue;
             } 
-            methods.push(i);
+            let mut args_count = None::<i32>;
+            if !&i.attrs.is_empty(){
+                let valid = i.attrs.iter()
+                    .filter(|a| a.path.segments.last().unwrap().ident == "command_args")
+                    .collect::<Vec<&Attribute>>();
+                if let Some(first) = valid.first() {
+                    let Ok(syn::Lit::Int(count)) 
+                        = first.parse_args() else { panic!("todo 3")};
+                    args_count = Some(count.base10_parse::<i32>().unwrap());
+                }
+            }
+                    
+
+            methods.push((i, args_count));
         }
         
         
@@ -68,13 +82,13 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
         );
         
         let mut stmts = vec![];
-        for m in methods {
+        for (m, a) in methods {
             let path = &m.sig.ident;
             //let call = format!("Self::{}", path);
             let stmt: syn::Stmt = syn::parse_quote!{
                 commands.push( Command {
                     name: stringify!(#path).into(),
-                    args_num: None,
+                    args_num: #a,
                     function: Box::new(Self::#path),
                 });
             };
