@@ -55,25 +55,14 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
                 &seg.arguments else { continue; };
             let Some(syn::GenericArgument::Type(gen_ty)) = 
                 bracketed.args.first() else { continue; };
-            if let syn::Type::Path(path) = gen_ty {
+            if let syn::Type::Path(_path) = gen_ty {
                 continue;
             } 
-            let mut args_count = None::<i32>;
-            if !&i.attrs.is_empty(){
-                let valid = i.attrs.iter()
-                    .filter(|a| a.path.segments.last()
-                        .unwrap().ident == "command_args")
-                    .collect::<Vec<&Attribute>>();
-                if let Some(first) = valid.first() {
-                    let Ok(syn::Lit::Int(count)) 
-                        = first.parse_args() else { panic!("todo 3")};
-                    args_count = Some(count.base10_parse::<i32>().unwrap());
-                }
-            }
-            let desc = None::<String>;
+            let args_count = get_args_count(&i.attrs);
+            let desc = get_description(&i.attrs);
                     
 
-            methods.push((i, args_count));
+            methods.push((i, args_count, desc));
         }
         
         
@@ -84,32 +73,32 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
         );
         
         let mut stmts = vec![];
-        for (m, a) in methods {
+        for (m, a, d) in methods {
             let path = &m.sig.ident;
-            if let Some(count) = a {
-                let count = count as usize;
-                let stmt: syn::Stmt = syn::parse_quote!{
-                    commands.push( Command {
-                        name: stringify!(#path).into(),
-                        desc: None,
-                        args_num: Some(#count),
-                        function: Box::new(Self::#path),
-                    });
-                };
-                stmts.push(stmt);
+
+            let args_num;
+            if let Some(args) = a {
+                let args = args as usize;
+                args_num = quote!{Some(#args)};
+            } else {
+                args_num = quote!{None};
             }
-            else {
-                let stmt: syn::Stmt = syn::parse_quote!{
-                    commands.push( Command {
-                        name: stringify!(#path).into(),
-                        desc: None,
-                        args_num: None,
-                        function: Box::new(Self::#path),
-                    });
-                };
-                stmts.push(stmt);
+            let description;
+            if let Some(desc) = d {
+                description = quote!{Some(#desc.to_owned())};
+            } else {
+                description = quote!{None};
             }
 
+            let stmt: syn::Stmt = syn::parse_quote!{
+                commands.push( Command {
+                    name: stringify!(#path).into(),
+                    desc: #description,
+                    args_num: #args_num,
+                    function: Box::new(Self::#path),
+                });
+            };
+            stmts.push(stmt);
         }
         init_method.block.stmts.extend(stmts);
 
@@ -135,6 +124,33 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
         panic!("Failed to resolve struct name!")
         
     }
+}
+
+fn get_args_count(attrs: &Vec<Attribute>) -> Option<i32> {
+    let valid = attrs.iter()
+        .filter(|a| a.path.segments.last()
+            .unwrap().ident == "command_args")
+        .collect::<Vec<&Attribute>>();
+    if let Some(first) = valid.first() {
+        let Ok(syn::Lit::Int(count)) 
+        = first.parse_args() else { panic!("failed parsing arg count")};
+        return Some(count.base10_parse::<i32>().unwrap());
+    }
+    None
+}
+
+fn get_description(attrs: &Vec<Attribute>) -> Option<String> {
+    let valid = attrs.iter()
+    .filter(|a| a.path.segments.last()
+        .unwrap().ident == "command_description")
+    .collect::<Vec<&Attribute>>();
+
+    if let Some(first) = valid.first() {
+        let Ok(syn::Lit::Str(d)) 
+        = first.parse_args() else { panic!("failed parsing description")};
+        return Some(d.value());
+    }
+    None
 }
 
 #[proc_macro_attribute]
