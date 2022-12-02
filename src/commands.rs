@@ -38,6 +38,7 @@ impl CommandHandler {
     pub fn remove_command(&mut self, name: &str) -> Result<()> {
         self.commands.remove(&Command {
             name: name.into(),
+            desc: None,
             args_num: None,
             function: Box::new(|_|{Ok(())})
         });
@@ -57,7 +58,8 @@ impl CommandHandler {
                 args.remove(0);
                 if let Some(count) = command.args_num {
                     if args.len() != count {
-                        return Err(anyhow::anyhow!("Invalid argument count!"))
+                        return Err(anyhow::anyhow!("Invalid argument count! (expected {})", 
+                                                                                count))
                     }
                 }
                 let mut context = CommandContext {
@@ -80,6 +82,7 @@ impl CommandHandler {
 
 pub struct Command {
     pub name: String,
+    pub desc: Option<String>,
     pub args_num: Option<usize>,
     pub function: Box<dyn Fn(&mut CommandContext) -> Result<()>>
 }

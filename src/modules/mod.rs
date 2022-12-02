@@ -42,6 +42,8 @@ pub struct TestModule;
 
 #[command_module]
 impl TestModule {
+
+    #[command_description("test command")]
     pub fn test(context: &mut CommandContext) -> Result<()> {
         println!("Working!");
         Ok(())

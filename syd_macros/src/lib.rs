@@ -1,7 +1,7 @@
 use std::{ops::Deref, fmt::Arguments};
 
 use proc_macro::TokenStream;
-use syn::{self, Attribute};
+use syn::{self, Attribute, token::Token};
 use quote::quote;
 
 #[proc_macro_attribute]
@@ -70,6 +70,7 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
                     args_count = Some(count.base10_parse::<i32>().unwrap());
                 }
             }
+            let desc = None::<String>;
                     
 
             methods.push((i, args_count));
@@ -90,6 +91,7 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
                 let stmt: syn::Stmt = syn::parse_quote!{
                     commands.push( Command {
                         name: stringify!(#path).into(),
+                        desc: None,
                         args_num: Some(#count),
                         function: Box::new(Self::#path),
                     });
@@ -100,6 +102,7 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
                 let stmt: syn::Stmt = syn::parse_quote!{
                     commands.push( Command {
                         name: stringify!(#path).into(),
+                        desc: None,
                         args_num: None,
                         function: Box::new(Self::#path),
                     });
@@ -162,4 +165,28 @@ fn impl_command_args(function: &syn::ItemFn, args: &Vec<syn::NestedMeta>) -> Tok
     quote!{
         #function
     }.into()
+}
+
+#[proc_macro_attribute]
+pub fn command_description(args: TokenStream, item: TokenStream) -> TokenStream {
+    let method_ast = syn::parse_macro_input!(item as syn::ItemFn);
+    let args_ast = syn::parse_macro_input!(args as syn::AttributeArgs);
+
+    impl_command_description(&method_ast, &args_ast)
+}
+
+fn impl_command_description(function: &syn::ItemFn, args: &Vec<syn::NestedMeta>) 
+    -> TokenStream {
+    if args.len() != 1 {
+        panic!("the `command_description` macro must contain only one argument of type String");
+    }
+    let Some(syn::NestedMeta::Lit(nested)) = args.first() else 
+        { panic!("failed parsing attribute argument 1") };
+    let syn::Lit::Str(_) = nested else 
+        { panic!("failed parsing attribute argument 2") };
+
+    quote!{
+        #function
+    }.into()
+    
 }
