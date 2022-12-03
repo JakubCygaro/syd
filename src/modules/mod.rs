@@ -28,15 +28,29 @@ impl GeneralModule {
         Ok(())
     }
     
+    
+}
+
+pub struct GetModule;
+
+#[command_module]
+#[command_group("get")]
+impl GetModule {
     #[command_args(1)]
     #[command_description("looks for an entry with provided id")]
-    pub fn get(context: &mut CommandContext) -> Result<()> {
+    pub fn id(context: &mut CommandContext) -> Result<()> {
         let id: i32 = context
             .args()[0]
             .to_owned()
             .parse()?;
         let event = context.manager().get_event(id)?;
         println!("{}", event);
+        Ok(())
+    }
+    #[command_args(0)]
+    #[command_description("fuck")]
+    pub fn chuj(context: &mut CommandContext) -> Result<()> {
+        println!("Dupa");
         Ok(())
     }
 }

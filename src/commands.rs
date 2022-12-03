@@ -1,9 +1,11 @@
-use std::collections::{HashSet};
+use std::collections::{HashSet, HashMap};
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
+use diesel::IntoSql;
 
 pub struct CommandHandler {
     commands: HashSet<Command>,
+    grouped: HashMap<String, HashSet<Command>>,
     manager: EventsManager
 }
 
@@ -11,6 +13,7 @@ impl CommandHandler {
     pub fn new(manager: EventsManager) -> Self {
         Self {
             commands: HashSet::new(),
+            grouped: HashMap::new(),
             manager: manager
         }
     }
@@ -29,19 +32,41 @@ impl CommandHandler {
     /// If a command has already been registered this method will return `Err`
     pub fn add_module<T: CommandModule>(&mut self) -> Result<()> {
         let commands = T::init();
-        for command in &commands {
-            if self.commands.contains(command) {
-                return Err(anyhow::anyhow!("Command with name {} already registered!", 
-                    &command.name));
-            }
+
+        if let Some(group) = &commands.first()
+            .ok_or_else(|| anyhow!("no commands in module"))?
+            .group {
+                if self.grouped.contains_key(group){
+                    return Err(anyhow!("group with name {} already registered", group));
+                }
+            
+
         }
-        self.commands.extend(commands.into_iter());
+
+        for command in commands {
+            let command_name = command.name.clone();
+            if let Some(group) = command.group.clone() {
+                if self.grouped.contains_key(&group) {
+                    let Some(comms) = self.grouped.get_mut(&group) else {
+                        return Err(anyhow!("could not find group {} wtf", group));
+                    };
+                    if !comms.insert(command) {
+                        return Err(anyhow!("command: {} already defined in group: {}", 
+                            &command_name, &group))
+                    }
+                }
+            } else if !self.commands.insert(command) {
+                return Err(anyhow::anyhow!("Command with name {} already registered!", 
+                    command_name));
+            } 
+        }
         Ok(())
     }
     pub fn remove_command(&mut self, name: &str) -> Result<()> {
         self.commands.remove(&Command {
             name: name.into(),
             desc: None,
+            group: None,
             args_num: None,
             function: Box::new(|_|{Ok(())})
         });
@@ -54,10 +79,21 @@ impl CommandHandler {
         if args.is_empty() {
             return Err(anyhow::anyhow!("No arguments found in input stream!"));
         }
-        let name = &args.get(0).unwrap().to_owned();
+        let mut name = args.get(0)
+            .ok_or_else(|| anyhow!("todo1"))?
+            .to_owned();
 
-        for command in &self.commands {
-            if &command.name == name {
+        let commands;
+        if let Some(grouped) = self.grouped.get(&name){
+            commands = grouped;
+            name = args.get(1)
+                .ok_or_else(|| anyhow!("todo2"))?
+                .to_owned();
+        } else {
+            commands = &self.commands;
+        }
+        for command in commands {
+            if &command.name == &name {
                 args.remove(0);
                 if let Some(count) = command.args_num {
                     if args.len() != count {
@@ -75,17 +111,28 @@ impl CommandHandler {
         }
         Err(anyhow::anyhow!("Command not found!"))
     }
-    ///Actually returns the names and descriptions
-    pub fn commands_names(&self) -> Vec<(&str, &Option<String>)> {
+    pub fn commands_info(&self) -> Vec<CommandInfo> {
         self.commands.iter()
-            .map(|c| (c.name.as_str(), &c.desc))
-            .collect::<Vec<(&str, &Option<String>)>>()
+            .map(|c| {
+                let description = "";
+                if let Some(desc) = &c.desc {
+
+                }
+
+                CommandInfo { 
+                    name: &c.name, 
+                    desc: "", 
+                    group: "" 
+                }
+
+            })
+            .collect::<Vec<CommandInfo>>()
     }
 }
 
-
 pub struct Command {
     pub name: String,
+    pub group: Option<String>,
     pub desc: Option<String>,
     pub args_num: Option<usize>,
     pub function: Box<dyn Fn(&mut CommandContext) -> Result<()>>
@@ -122,4 +169,10 @@ impl<'a> CommandContext<'a> {
 
 pub trait CommandModule {
     fn init() -> Vec<Command>;
+}
+
+pub struct CommandInfo<'a> {
+    pub name: &'a str,
+    pub desc: &'a str,
+    pub group: &'a str,
 }

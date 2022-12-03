@@ -135,6 +135,8 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
                 let mut commands: Vec<Command> = vec![];
             }
         );
+        //check if there is a group defined for these commands
+        let impl_group = get_group(&ast.attrs);
         
         let mut stmts = vec![];
         for (m, a, d) in methods {
@@ -153,10 +155,17 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
             } else {
                 description = quote!{None};
             }
+            let group;
+            if let Some(g) = &impl_group {
+                group = quote!{Some(#g.to_owned())};
+            } else {
+                group = quote!{None};
+            }
 
             let stmt: syn::Stmt = syn::parse_quote!{
                 commands.push( Command {
                     name: stringify!(#path).into(),
+                    group: #group,
                     desc: #description,
                     args_num: #args_num,
                     function: Box::new(Self::#path),
@@ -190,6 +199,19 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
     }
 }
 
+fn get_group(attrs: &Vec<Attribute>) -> Option<String> {
+    let valid = attrs.iter()
+        .filter(|a| a.path.segments.last()
+            .unwrap().ident == "command_group")
+        .collect::<Vec<&Attribute>>();
+    if let Some(first) = valid.first() {
+        let Ok(syn::Lit::Str(group)) 
+            = first.parse_args() else { panic!("failed parsing command group")};
+        return Some(group.value());
+    }
+    None
+}
+
 fn get_args_count(attrs: &Vec<Attribute>) -> Option<i32> {
     let valid = attrs.iter()
         .filter(|a| a.path.segments.last()
@@ -197,7 +219,7 @@ fn get_args_count(attrs: &Vec<Attribute>) -> Option<i32> {
         .collect::<Vec<&Attribute>>();
     if let Some(first) = valid.first() {
         let Ok(syn::Lit::Int(count)) 
-        = first.parse_args() else { panic!("failed parsing arg count")};
+            = first.parse_args() else { panic!("failed parsing arg count")};
         return Some(count.base10_parse::<i32>().unwrap());
     }
     None
@@ -211,7 +233,7 @@ fn get_description(attrs: &Vec<Attribute>) -> Option<String> {
 
     if let Some(first) = valid.first() {
         let Ok(syn::Lit::Str(d)) 
-        = first.parse_args() else { panic!("failed parsing description")};
+            = first.parse_args() else { panic!("failed parsing description")};
         return Some(d.value());
     }
     None
@@ -295,12 +317,12 @@ fn impl_command_description(function: &syn::ItemFn, args: &Vec<syn::NestedMeta>)
 #[proc_macro_attribute]
 pub fn command_group(args: TokenStream, item: TokenStream) -> TokenStream {
     let args = syn::parse_macro_input!(args as syn::AttributeArgs);
-    let item = syn::parse_macro_input!(item as syn::ItemFn);
+    let item = syn::parse_macro_input!(item as syn::ItemImpl);
 
     impl_command_group(&item, &args)
 }
 
-fn impl_command_group(function: &syn::ItemFn, args: &Vec<syn::NestedMeta>) -> TokenStream {
+fn impl_command_group(function: &syn::ItemImpl, args: &Vec<syn::NestedMeta>) -> TokenStream {
     if args.len() != 1 {
         panic!("the `command_group` macro must contain only one argument of type String");
     }

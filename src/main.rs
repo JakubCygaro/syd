@@ -9,6 +9,7 @@ fn main() {
     let mut handler = CommandHandler::new(manager);
     handler.add_module::<modules::GeneralModule>().unwrap();
     handler.add_module::<modules::TestModule>().unwrap();
+    handler.add_module::<modules::GetModule>().unwrap();
     use std::io;
     startup_message();
     loop {
