@@ -281,8 +281,45 @@ fn impl_command_description(function: &syn::ItemFn, args: &Vec<syn::NestedMeta>)
     let syn::Lit::Str(_) = nested else 
         { panic!("failed parsing attribute argument 2") };
 
+    let attrs = &function.attrs;
+    if attrs.iter()
+        .any(|a| a.path.segments.last().unwrap().ident == "command_description") {
+            panic!("this attribute can only be used once.")
+    }
     quote!{
         #function
     }.into()
     
+}
+
+#[proc_macro_attribute]
+pub fn command_group(args: TokenStream, item: TokenStream) -> TokenStream {
+    let args = syn::parse_macro_input!(args as syn::AttributeArgs);
+    let item = syn::parse_macro_input!(item as syn::ItemFn);
+
+    impl_command_group(&item, &args)
+}
+
+fn impl_command_group(function: &syn::ItemFn, args: &Vec<syn::NestedMeta>) -> TokenStream {
+    if args.len() != 1 {
+        panic!("the `command_group` macro must contain only one argument of type String");
+    }
+    let Some(syn::NestedMeta::Lit(nested)) = args.first() else 
+        { panic!("failed parsing attribute argument 1") };
+    let syn::Lit::Str(lit) = nested else 
+        { panic!("failed parsing attribute argument 2") };
+    let group_name = lit.value();
+    if group_name.contains(' ') || !group_name.is_ascii() {
+        panic!("group name may only contain ascii characters and no spaces!")
+    }
+
+
+    let attrs = &function.attrs;
+    if attrs.iter()
+        .any(|a| a.path.segments.last().unwrap().ident == "command_group") {
+            panic!("this attribute can only be used once.")
+    }
+    quote!{
+        #function
+    }.into()
 }
