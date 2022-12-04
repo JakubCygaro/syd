@@ -19,8 +19,8 @@ fn main() {
         match buff {
             ".quit" => break,
             ".commands" => {
-                for (n, d) in handler.commands_names() {
-                    println!("{} -> {}", n, d.clone().unwrap_or("no description".to_owned()));
+                for inf in handler.commands_info() {
+                    println!("{}", inf.name);
                 }
             },
             _ => handler.handle(buff.into()).or_else(|e| {

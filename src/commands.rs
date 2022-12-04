@@ -1,7 +1,6 @@
 use std::collections::{HashSet, HashMap};
 
 use anyhow::{Result, anyhow};
-use diesel::IntoSql;
 
 pub struct CommandHandler {
     commands: HashSet<Command>,
@@ -36,11 +35,9 @@ impl CommandHandler {
         if let Some(group) = &commands.first()
             .ok_or_else(|| anyhow!("no commands in module"))?
             .group {
-                if self.grouped.contains_key(group){
+                if self.grouped.contains_key(group) {
                     return Err(anyhow!("group with name {} already registered", group));
                 }
-            
-
         }
 
         for command in commands {
@@ -114,17 +111,11 @@ impl CommandHandler {
     pub fn commands_info(&self) -> Vec<CommandInfo> {
         self.commands.iter()
             .map(|c| {
-                let description = "";
-                if let Some(desc) = &c.desc {
-
-                }
-
                 CommandInfo { 
                     name: &c.name, 
                     desc: "", 
                     group: "" 
                 }
-
             })
             .collect::<Vec<CommandInfo>>()
     }
@@ -143,6 +134,7 @@ use crate::EventsManager;
 impl Hash for Command {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.name.hash(state);
+        self.group.hash(state);
     }
 }
 
