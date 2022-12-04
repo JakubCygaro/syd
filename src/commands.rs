@@ -4,7 +4,6 @@ use anyhow::{Result, anyhow};
 
 pub struct CommandHandler {
     commands: HashSet<Command>,
-    grouped: HashMap<String, HashSet<Command>>,
     manager: EventsManager
 }
 
@@ -12,7 +11,6 @@ impl CommandHandler {
     pub fn new(manager: EventsManager) -> Self {
         Self {
             commands: HashSet::new(),
-            grouped: HashMap::new(),
             manager: manager
         }
     }
@@ -32,30 +30,39 @@ impl CommandHandler {
     pub fn add_module<T: CommandModule>(&mut self) -> Result<()> {
         let commands = T::init();
 
-        if let Some(group) = &commands.first()
-            .ok_or_else(|| anyhow!("no commands in module"))?
-            .group {
-                if self.grouped.contains_key(group) {
-                    return Err(anyhow!("group with name {} already registered", group));
-                }
-        }
+        // if let Some(group) = &commands.first()
+        //     .ok_or_else(|| anyhow!("no commands in module"))?
+        //     .group {
+        //         if self.grouped.contains_key(group) {
+        //             return Err(anyhow!("group with name {} already registered", group));
+        //         }
+        // }
+
+        // for command in commands {
+        //     let command_name = command.name.clone();
+        //     if let Some(group) = command.group.clone() {
+        //         if self.grouped.contains_key(&group) {
+        //             let Some(comms) = self.grouped.get_mut(&group) else {
+        //                 return Err(anyhow!("could not find group {} wtf", group));
+        //             };
+        //             if !comms.insert(command) {
+        //                 return Err(anyhow!("command: {} already defined in group: {}", 
+        //                     &command_name, &group))
+        //             }
+        //         }
+        //     } else if !self.commands.insert(command) {
+        //         return Err(anyhow::anyhow!("Command with name {} already registered!", 
+        //             command_name));
+        //     } 
+        // }
 
         for command in commands {
             let command_name = command.name.clone();
-            if let Some(group) = command.group.clone() {
-                if self.grouped.contains_key(&group) {
-                    let Some(comms) = self.grouped.get_mut(&group) else {
-                        return Err(anyhow!("could not find group {} wtf", group));
-                    };
-                    if !comms.insert(command) {
-                        return Err(anyhow!("command: {} already defined in group: {}", 
-                            &command_name, &group))
-                    }
-                }
-            } else if !self.commands.insert(command) {
-                return Err(anyhow::anyhow!("Command with name {} already registered!", 
-                    command_name));
-            } 
+            let group = command.group.clone().unwrap_or("".to_owned());
+            if !self.commands.insert(command) {
+                return Err(anyhow!("command named: {} in group: {} already exists!", 
+                                command_name, group));
+            }
         }
         Ok(())
     }
@@ -76,37 +83,92 @@ impl CommandHandler {
         if args.is_empty() {
             return Err(anyhow::anyhow!("No arguments found in input stream!"));
         }
-        let mut name = args.get(0)
-            .ok_or_else(|| anyhow!("todo1"))?
+
+        let first = args.get(0)
+            .ok_or_else(|| anyhow!("First argument not found! (wtf?)"))?
             .to_owned();
 
-        let commands;
-        if let Some(grouped) = self.grouped.get(&name){
-            commands = grouped;
-            name = args.get(1)
-                .ok_or_else(|| anyhow!("todo2"))?
+        let valid = self.commands.iter()
+                    .filter(|c| c.group == Some(first.clone()))
+                    .collect::<Vec<&Command>>();
+
+        if !valid.is_empty() {
+            let name = args.get(1)
+                .ok_or_else(|| anyhow!("No function specified"))?
                 .to_owned();
-        } else {
-            commands = &self.commands;
-        }
-        for command in commands {
-            if &command.name == &name {
-                args.remove(0);
-                if let Some(count) = command.args_num {
-                    if args.len() != count {
-                        return Err(anyhow::anyhow!("Invalid argument count! (expected {})", 
-                                                                                count))
-                    }
+            let valid = valid.into_iter()
+                .filter(|c| c.name == name)
+                .collect::<Vec<&Command>>();
+
+            let command = valid.first()
+                                    .ok_or_else(|| anyhow!("Command not found!"))?;
+            args.remove(0);
+            args.remove(0);
+            if let Some(count) = command.args_num {
+                if args.len() != count {
+                    return Err(anyhow::anyhow!("Invalid argument count! (expected {})", 
+                                                                            count))
                 }
-                let mut context = CommandContext {
-                    manager: &mut self.manager,
-                    args: args,
-                };
-                (command.function)(&mut context)?;
-                return Ok(());
             }
+            let mut context = CommandContext {
+                manager: &mut self.manager,
+                args: args,
+            };
+            (command.function)(&mut context)
+        } else {
+            let name = first;
+            let commands = self.commands.iter()
+                        .filter(|c| c.name == name)
+                        .collect::<Vec<&Command>>();
+            let command = commands.first()
+                        .ok_or_else(|| anyhow!("Command not found!"))?;
+            args.remove(0);
+
+            if let Some(count) = command.args_num {
+                if args.len() != count {
+                    return Err(anyhow::anyhow!("Invalid argument count! (expected {})", 
+                                                                            count))
+                }
+            }
+            let mut context = CommandContext {
+                manager: &mut self.manager,
+                args: args,
+            };
+            (command.function)(&mut context)
         }
-        Err(anyhow::anyhow!("Command not found!"))
+
+
+
+
+        // let commands;
+        // if let Some(grouped) = self.grouped.get(&name){
+        //     commands = grouped;
+        //     name = args.get(1)
+        //         .ok_or_else(|| anyhow!("todo2"))?
+        //         .to_owned();
+        // } else {
+        //     commands = &self.commands;
+        // }
+
+
+        // for command in commands {
+        //     if &command.name == &name {
+        //         args.remove(0);
+        //         if let Some(count) = command.args_num {
+        //             if args.len() != count {
+        //                 return Err(anyhow::anyhow!("Invalid argument count! (expected {})", 
+        //                                                                         count))
+        //             }
+        //         }
+        //         let mut context = CommandContext {
+        //             manager: &mut self.manager,
+        //             args: args,
+        //         };
+        //         (command.function)(&mut context)?;
+        //         return Ok(());
+        //     }
+        // }
+        //Err(anyhow!("Command not found!"))
     }
     pub fn commands_info(&self) -> Vec<CommandInfo> {
         self.commands.iter()

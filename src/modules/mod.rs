@@ -39,6 +39,9 @@ impl GetModule {
     #[command_args(1)]
     #[command_description("looks for an entry with provided id")]
     pub fn id(context: &mut CommandContext) -> Result<()> {
+        for arg in context.args() {
+            println!("{}", arg);
+        }
         let id: i32 = context
             .args()[0]
             .to_owned()
