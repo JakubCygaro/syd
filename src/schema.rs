@@ -4,7 +4,7 @@ diesel::table! {
     events (id) {
         id -> Nullable<Integer>,
         name -> Text,
-        day -> Integer,
+        day -> Text,
         starth -> Text,
         endh -> Text,
         isLecture -> Integer,

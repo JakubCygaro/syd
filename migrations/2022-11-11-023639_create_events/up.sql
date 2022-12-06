@@ -1,8 +1,9 @@
 -- Your SQL goes here
+
 CREATE TABLE events(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    day INTEGER NOT NULL,
+    day TEXT NOT NULL,
     starth TEXT NOT NULL,
     endh TEXT NOT NULL,
     isLecture INTEGER NOT NULL DEFAULT FALSE

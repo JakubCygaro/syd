@@ -20,7 +20,15 @@ fn main() {
             ".quit" => break,
             ".commands" => {
                 for inf in handler.commands_info() {
-                    println!("{}", inf.name);
+                    if let Some(g) = inf.group {
+                        print!("{} ", g);
+                    }
+                    print!("{}: ", inf.name);
+                    for i in 0..inf.args {
+                        print!("arg{} ", i);
+                    }
+                    print!("-> {}", inf.desc);
+                    println!();
                 }
             },
             _ => handler.handle(buff.into()).or_else(|e| {

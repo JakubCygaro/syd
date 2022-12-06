@@ -1,4 +1,4 @@
-use std::collections::{HashSet, HashMap};
+use std::{collections::{HashSet, HashMap}, clone};
 
 use anyhow::{Result, anyhow};
 
@@ -66,11 +66,11 @@ impl CommandHandler {
         }
         Ok(())
     }
-    pub fn remove_command(&mut self, name: &str) -> Result<()> {
+    pub fn remove_command(&mut self, name: &str, group: Option<String>) -> Result<()> {
         self.commands.remove(&Command {
             name: name.into(),
             desc: None,
-            group: None,
+            group: group,
             args_num: None,
             function: Box::new(|_|{Ok(())})
         });
@@ -171,15 +171,22 @@ impl CommandHandler {
         //Err(anyhow!("Command not found!"))
     }
     pub fn commands_info(&self) -> Vec<CommandInfo> {
-        self.commands.iter()
-            .map(|c| {
-                CommandInfo { 
-                    name: &c.name, 
-                    desc: "", 
-                    group: "" 
-                }
-            })
-            .collect::<Vec<CommandInfo>>()
+        let mut ret = vec![];
+        for cmd in &self.commands {
+            let desc = cmd.desc.as_ref()
+                .unwrap_or(&String::from(""))
+                .clone();
+            let group = cmd.group.clone();
+                
+            ret.push(CommandInfo {
+                name: &cmd.name.as_str(),
+                desc: desc,
+                group: group,
+                args: cmd.args_num.unwrap_or(0),
+            });
+        }
+        ret.sort();
+        ret
     }
 }
 
@@ -225,8 +232,12 @@ pub trait CommandModule {
     fn init() -> Vec<Command>;
 }
 
+#[derive(Ord, PartialEq, PartialOrd, Eq)]
 pub struct CommandInfo<'a> {
     pub name: &'a str,
-    pub desc: &'a str,
-    pub group: &'a str,
+    pub desc: String,
+    pub group: Option<String>,
+    pub args: usize,
 }
+
+

@@ -8,7 +8,7 @@ pub mod transformed;
 pub struct Event {
     pub id: Option<i32>,
     pub name: String,
-    pub day: i32,
+    pub day: String,
     pub starth: String,
     pub endh: String,
     pub is_lecture: i32,
@@ -18,7 +18,7 @@ pub struct Event {
 #[diesel(table_name = events)]
 pub struct NewEvent {
     pub name: String,
-    pub day: i32,
+    pub day: String,
     pub starth: String,
     pub endh: String,
     pub isLecture: i32,
