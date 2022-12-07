@@ -32,6 +32,7 @@ impl GeneralModule {
         Ok(())
     }
     #[command_args(5)]
+    #[command_description("day, name, is_lecture, start hour, end hour")]
     pub fn add(context: &mut CommandContext) -> Result<()> {
 
         let args = context.args();
@@ -43,6 +44,7 @@ impl GeneralModule {
             endh: NaiveTime::parse_from_str(&args[4], "%H:%M")?
         };
         context.manager().add_event(new)?;
+        println!("Event added successfuly!");
         Ok(())
     }
     #[command_args(1)]
