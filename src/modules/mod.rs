@@ -25,10 +25,12 @@ impl GeneralModule {
     #[command_description("lists all database entries")]
     pub fn all(context: &mut CommandContext) -> Result<()> {
 
-        let events = context.manager().get_all()?;
-        for e in events {
-            println!("{}", e);
-        }
+        let mut events = context.manager().get_all()?;
+        events.sort_by(|a, b| 
+            {
+                a.day.num_days_from_monday().cmp(&b.day.num_days_from_monday())
+            });
+        events.print();
         Ok(())
     }
     #[command_args(5)]
@@ -90,7 +92,8 @@ impl GetModule {
 
         let day = context.args().get(0).unwrap();
         let day = day.parse::<Weekday>()?;
-        let ev = context.manager().by_day(day)?;
+        let mut ev = context.manager().by_day(day)?;
+        ev.sort_by(|a, b| a.starth.cmp(&b.starth));
         ev.print();
         Ok(())
     }
@@ -134,3 +137,4 @@ impl EventsExt for Vec<WeekEvent> {
         }
     }
 }
+
