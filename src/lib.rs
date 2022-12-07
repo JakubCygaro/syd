@@ -16,6 +16,7 @@ pub use schema::events::{
     self,
     dsl::*,
 };
+use chrono;
 
 
 pub struct EventsManager {
@@ -56,6 +57,7 @@ impl EventsManager {
             .first::<Event>(&mut self.connection)?;
         Ok(event.into())
     }
+
     pub fn get_events(&mut self, event: WeekEvent) -> Result<Vec<WeekEvent>>{
         let event: Event = event.into();
         let found = events
@@ -72,6 +74,19 @@ impl EventsManager {
         .collect();
 
         Ok(ret)
+    }
+    pub fn by_day(&mut self, weekday: chrono::Weekday) -> Result<Vec<WeekEvent>>{
+        let found = events.filter(day.eq(weekday.to_string()))
+            .load::<Event>(&mut self.connection)?;
+        Ok(found.into_iter().map(|e| e.into()).collect::<Vec<WeekEvent>>())
+    }
+    pub fn by_starth(&mut self, hour: chrono::NaiveTime) -> Result<Vec<WeekEvent>> {
+        Ok(events.filter(starth.eq(hour.to_string()))
+                    .load::<Event>(&mut self.connection)?
+                    .into_iter()
+                    .map(|e| e.into())
+                    .collect::<Vec<WeekEvent>>()
+                    .into())
     }
     pub fn get_all(&mut self) -> Result<Vec<WeekEvent>> {
         let res = 

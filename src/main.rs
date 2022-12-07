@@ -1,4 +1,3 @@
-use std::io::Read;
 pub mod modules;
 
 use syd::commands::*;
@@ -13,6 +12,7 @@ fn main() {
     use std::io;
     startup_message();
     loop {
+        println!("type a command...");
         let mut buff = String::from("");
         io::stdin().read_line(&mut buff).unwrap();
         let buff = buff.trim();
@@ -31,10 +31,13 @@ fn main() {
                     println!();
                 }
             },
-            _ => handler.handle(buff.into()).or_else(|e| {
+            _ => {
+                println!();
+                handler.handle(buff.into()).or_else(|e| {
                     println!("{:?}", e);
                     Ok::<_, &str>(())
-                }).unwrap_or_else(|err| println!("{}", err)),
+                }).unwrap_or_else(|err| println!("{}", err))
+            },
         }
     }
 }
