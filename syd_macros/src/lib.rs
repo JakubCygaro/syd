@@ -1,8 +1,80 @@
-use std::{ops::Deref, fmt::Arguments};
+use std::{ops::Deref, fmt::Arguments, thread::panicking};
 
 use proc_macro::TokenStream;
 use syn::{self, Attribute, token::Token};
 use quote::quote;
+
+
+#[proc_macro_attribute]
+pub fn command(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let ast = syn::parse_macro_input!(item as syn::ImplItemMethod);
+
+    impl_command(&ast)
+}
+
+fn impl_command(function: &syn::ImplItemMethod) -> TokenStream {
+    // get method args
+    let inputs = &function.sig.inputs;
+            
+    // method must have only 2 args
+    if inputs.len() < 1 { 
+        panic!("A command must have at least one argument of type `&mut CommandContext`"); 
+    }
+    
+    let attrs = &function.attrs;
+    if attrs.iter()
+        .any(|a| a.path.segments.last().unwrap().ident == "command_args") {
+            panic!("this attribute can only be used once.")
+    }
+    
+    let Some(syn::FnArg::Typed(t)) = &inputs.first() else {
+        panic!("First argument must be of type `&mut CommandContext`");
+    };
+    let syn::Type::Reference(r) = &*t.ty else {
+        panic!("First argument is not a reference");
+    };
+    let Some(_) = r.mutability else {
+        panic!("Reference must be mutable");
+    };
+    let syn::Type::Path(p) = &*t.ty else {
+        panic!("Failed to parse first argument type path");
+    };
+    if p.path.segments.last().unwrap().ident != "CommandContext" {
+        panic!("First argument must be of type `&mut CommandContext`");
+    }
+
+    //check if method returns Result<()>
+    let output = &function.sig.output;
+    let syn::ReturnType::Type(_, a) = output else { 
+        panic!("The return type of a command must be `Result<()>"); 
+    };
+    let syn::Type::Path(path) = &**a else { 
+        panic!("The return type of a command must be `Result<()>"); 
+    };
+    let Some(seg) = path.path.segments.last() else { 
+        panic!("The return type of a command must be `Result<()>"); 
+    };
+    if seg.ident != "Result" { 
+        panic!("The return type of a command must be `Result<()>"); 
+    };
+
+    let syn::PathArguments::AngleBracketed(bracketed) =
+        &seg.arguments else { 
+            panic!("The return type of a command must be `Result<()>"); 
+        };
+    let Some(syn::GenericArgument::Type(gen_ty)) = 
+        bracketed.args.first() else { 
+            panic!("The return type of a command must be `Result<()>"); 
+        };
+    if let syn::Type::Path(_path) = gen_ty {
+        panic!("The return type of a command must be `Result<()>");
+    } else {
+        quote!{
+            #function
+        }.into()
+    }
+}
+
 
 /// 
 /// Implements `CommandModule` for a struct, by registering certain methods as commands,
