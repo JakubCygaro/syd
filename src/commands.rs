@@ -206,4 +206,10 @@ impl ArgParse for chrono::Weekday {
     }
 }
 
+impl ArgParse for chrono::NaiveTime {
+    fn arg_parse(text: &str) -> Result<Self> {
+        Ok(chrono::NaiveTime::from_str(text)?)
+    }
+}
+
 

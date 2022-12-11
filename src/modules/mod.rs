@@ -36,17 +36,17 @@ impl GeneralModule {
     #[command]
     #[command_description("day, name, is_lecture, start hour, end hour")]
     pub fn add(context: &mut CommandContext, 
-        day: String, 
+        day: chrono::Weekday, 
         name: String, 
         is_lecture: bool,
-        starth: String,
-        endh: String) -> Result<()> {
+        starth: chrono::NaiveTime,
+        endh: chrono::NaiveTime) -> Result<()> {
         let new = NewWeekEvent{
-            day: day.parse()?,
+            day: day,
             name: name,
             is_lecture: is_lecture,
-            starth: NaiveTime::parse_from_str(&starth, "%H:%M")?,
-            endh: NaiveTime::parse_from_str(&endh, "%H:%M")?
+            starth: starth,
+            endh: endh
         };
         context.manager().add_event(new)?;
         println!("Event added successfuly!");
@@ -88,9 +88,7 @@ impl GetModule {
     }
     #[command]
     #[command_description("gets entries by start hour")]
-    pub fn starth(context: &mut CommandContext, starth: String) -> Result<()> {
-        use chrono::NaiveTime;
-        let starth = NaiveTime::parse_from_str(&starth, "%H:%M:%S")?;
+    pub fn starth(context: &mut CommandContext, starth: chrono::NaiveTime) -> Result<()> {
         context.manager().by_starth(starth)?.print();
         Ok(())
     }
