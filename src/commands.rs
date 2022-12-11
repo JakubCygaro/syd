@@ -1,4 +1,4 @@
-use std::{collections::{HashSet, HashMap}, clone};
+use std::{collections::{HashSet, HashMap}, clone, str::FromStr};
 
 use anyhow::{Result, anyhow};
 
@@ -45,7 +45,7 @@ impl CommandHandler {
             desc: None,
             group: group,
             args_num: None,
-            function: Box::new(|_|{Ok(())})
+            function: Box::new(|_, _|{Ok(())})
         });
         Ok(())
     }
@@ -77,17 +77,16 @@ impl CommandHandler {
                                     .ok_or_else(|| anyhow!("Command not found!"))?;
             args.remove(0);
             args.remove(0);
-            if let Some(count) = command.args_num {
-                if args.len() != count {
-                    return Err(anyhow::anyhow!("Invalid argument count! (expected {})", 
-                                                                            count))
-                }
-            }
+            // if let Some(count) = command.args_num {
+            //     if args.len() != count {
+            //         return Err(anyhow::anyhow!("Invalid argument count! (expected {})", 
+            //                                                                 count))
+            //     }
+            // }
             let mut context = CommandContext {
                 manager: &mut self.manager,
-                args: args,
             };
-            (command.function)(&mut context)
+            (command.function)(&mut context, args)
         } else {
             let name = first;
             let commands = self.commands.iter()
@@ -97,17 +96,16 @@ impl CommandHandler {
                         .ok_or_else(|| anyhow!("Command not found!"))?;
             args.remove(0);
 
-            if let Some(count) = command.args_num {
-                if args.len() != count {
-                    return Err(anyhow::anyhow!("Invalid argument count! (expected {})", 
-                                                                            count))
-                }
-            }
+            // if let Some(count) = command.args_num {
+            //     if args.len() != count {
+            //         return Err(anyhow::anyhow!("Invalid argument count! (expected {})", 
+            //                                                                 count))
+            //     }
+            // }
             let mut context = CommandContext {
                 manager: &mut self.manager,
-                args: args,
             };
-            (command.function)(&mut context)
+            (command.function)(&mut context, args)
         }
     }
 
@@ -136,7 +134,7 @@ pub struct Command {
     pub group: Option<String>,
     pub desc: Option<String>,
     pub args_num: Option<usize>,
-    pub function: Box<dyn Fn(&mut CommandContext) -> Result<()>>
+    pub function: Box<dyn Fn(&mut CommandContext, Vec<String>) -> Result<()>>
 }
 use std::hash::{Hash, Hasher};
 
@@ -158,14 +156,10 @@ impl Eq for Command {}
 
 pub struct CommandContext<'a> {
     manager: &'a mut EventsManager,
-    args: Vec<String>,
 }
 impl<'a> CommandContext<'a> {
     pub fn manager(&mut self) -> &mut EventsManager {
         &mut self.manager
-    }
-    pub fn args(&mut self) -> &mut Vec<String> {
-        &mut self.args
     }
 }
 
@@ -191,6 +185,24 @@ where
 impl ArgParse for i32 {
     fn arg_parse(text: &str) -> Result<Self> {
         Ok(text.parse::<i32>()?)
+    }
+}
+
+impl ArgParse for String {
+    fn arg_parse(text: &str) -> Result<Self> {
+        Ok(text.to_owned())
+    }
+}
+
+impl ArgParse for bool {
+    fn arg_parse(text: &str) -> Result<Self> {
+        Ok(text.parse::<bool>()?)
+    }
+}
+
+impl ArgParse for chrono::Weekday {
+    fn arg_parse(text: &str) -> Result<Self> {
+        Ok(text.parse::<chrono::Weekday>()?)
     }
 }
 

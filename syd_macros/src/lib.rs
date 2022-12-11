@@ -69,29 +69,6 @@ fn impl_command(function: &syn::ImplItemMethod) -> TokenStream {
     if let syn::Type::Path(_path) = gen_ty {
         panic!("The return type of a command must be `Result<()>");
     } 
-    // let name = &function.sig.ident;
-    // let name = format!("{}_parse", name);
-    // let mut parse_method: syn::ImplItemMethod = syn::parse_quote! {
-    //     pub fn #name(context: &mut CommandContext, args: Vec<String>) -> Result<()> {
-    //         use anyhow::anyhow;
-    //         if args.len() != #arg_count {
-    //             return Err(anyhow!("invalid argument count!"));
-    //         }
-    //     }
-    // };
-
-    // for (n,i) in inputs.iter().skip(1).enumerate() {
-    //     let syn::FnArg::Typed(pat) = i else {panic!("adadada")};
-    //     let syn::Type::Path(path) = &*pat.ty else {panic!("adad")};
-    //     let path = &path.path;
-    //     let arg = format!("arg_{}", n);
-    //     let stmt: syn::Stmt = syn::parse_quote!{
-    //         let #arg = <#path as ArgParse>::arg_parse(args[#n])?;
-    //     };
-    //     parse_method.block.stmts.push(stmt);
-    // };
-
-    //parse_method.block.stmts.push(syn::parse_quote!{Ok(())});
     let name = &function.sig.ident;
     let name = format!("{}_parse", name);
     let name: syn::Ident = syn::parse_str(&name).unwrap();
@@ -99,11 +76,10 @@ fn impl_command(function: &syn::ImplItemMethod) -> TokenStream {
     let mut parse_method: syn::ImplItemMethod = syn::parse_quote!{
         pub fn #name (context: &mut CommandContext, args: Vec<String>) -> Result<()> {
             use anyhow::anyhow;
+            use syd::commands::ArgParse;
             if args.len() != #arg_count {
                 return Err(anyhow!("invalid argument count!"));
-            }
-
-            
+            }  
         }
     };
 
@@ -217,47 +193,14 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
                     syn::ImplItem::Method(m) => Some(m),
                     _ => None,
                 })
+                .filter(|m| {
+                    m.attrs.iter().any(|a| {
+                        a.path.segments.last().unwrap().ident == "command"
+                    })
+                })
         {
-            // get method args
-            let inputs = &i.sig.inputs;
-            
-            // method must have only 2 args
-            if inputs.len() != 1 { continue; }
-            // first arg cannot be self
-            if let Some(syn::FnArg::Receiver(_)) = &inputs.first() {
-                continue;
-            }
-            //method must be public
-            let syn::Visibility::Public(_) = &i.vis else { continue;};
-
-            //first arg is a type
-            let Some(syn::FnArg::Typed(arg)) = &inputs.first() else { continue; };
-            //is a reference
-            let syn::Type::Reference(a) = &*arg.ty else { continue; };
-            //is a mut reference
-            let Some(_) = a.mutability else { continue; };
-            //of type CommandContext
-            let syn::Type::Path(ty) = &*a.elem else { continue; };
-            let Some(last) = ty.path.segments.last() else { continue; };
-            if last.ident != "CommandContext" { continue; }
-
-            //check if method returns Result<()>
-            let output = &i.sig.output;
-            let syn::ReturnType::Type(_, a) = output else { continue; };
-            let syn::Type::Path(path) = &**a else { continue; };
-            let Some(seg) = path.path.segments.last() else { continue;};
-            if seg.ident != "Result" { continue; };
-
-            let syn::PathArguments::AngleBracketed(bracketed) =
-                &seg.arguments else { continue; };
-            let Some(syn::GenericArgument::Type(gen_ty)) = 
-                bracketed.args.first() else { continue; };
-            if let syn::Type::Path(_path) = gen_ty {
-                continue;
-            } 
             let args_count = get_args_count(&i.attrs);
             let desc = get_description(&i.attrs);
-                    
 
             methods.push((i, args_count, desc));
         }
@@ -294,14 +237,14 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
             } else {
                 group = quote!{None};
             }
-
+            let ident: syn::Ident = syn::parse_str(&format!("{}_parse", path)).unwrap();
             let stmt: syn::Stmt = syn::parse_quote!{
                 commands.push( Command {
                     name: stringify!(#path).into(),
                     group: #group,
                     desc: #description,
                     args_num: #args_num,
-                    function: Box::new(Self::#path),
+                    function: Box::new(Self::#ident),
                 });
             };
             stmts.push(stmt);
