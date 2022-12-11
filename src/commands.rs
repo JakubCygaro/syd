@@ -181,4 +181,17 @@ pub struct CommandInfo<'a> {
     pub args: usize,
 }
 
+pub trait ArgParse 
+where 
+    Self: Sized
+{
+    fn arg_parse(text: &str) -> Result<Self>;
+}
+
+impl ArgParse for i32 {
+    fn arg_parse(text: &str) -> Result<Self> {
+        Ok(text.parse::<i32>()?)
+    }
+}
+
 

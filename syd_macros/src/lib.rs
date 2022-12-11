@@ -1,7 +1,7 @@
-use std::{ops::Deref, fmt::Arguments, thread::panicking};
+use std::{ops::Deref, fmt::{Arguments, format}, thread::panicking};
 
 use proc_macro::TokenStream;
-use syn::{self, Attribute, token::Token};
+use syn::{self, Attribute, token::Token, punctuated::Punctuated};
 use quote::quote;
 
 
@@ -36,7 +36,7 @@ fn impl_command(function: &syn::ImplItemMethod) -> TokenStream {
     let Some(_) = r.mutability else {
         panic!("Reference must be mutable");
     };
-    let syn::Type::Path(p) = &*t.ty else {
+    let syn::Type::Path(p) = &*r.elem else {
         panic!("Failed to parse first argument type path");
     };
     if p.path.segments.last().unwrap().ident != "CommandContext" {
@@ -68,11 +68,72 @@ fn impl_command(function: &syn::ImplItemMethod) -> TokenStream {
         };
     if let syn::Type::Path(_path) = gen_ty {
         panic!("The return type of a command must be `Result<()>");
-    } else {
-        quote!{
-            #function
-        }.into()
-    }
+    } 
+    // let name = &function.sig.ident;
+    // let name = format!("{}_parse", name);
+    // let mut parse_method: syn::ImplItemMethod = syn::parse_quote! {
+    //     pub fn #name(context: &mut CommandContext, args: Vec<String>) -> Result<()> {
+    //         use anyhow::anyhow;
+    //         if args.len() != #arg_count {
+    //             return Err(anyhow!("invalid argument count!"));
+    //         }
+    //     }
+    // };
+
+    // for (n,i) in inputs.iter().skip(1).enumerate() {
+    //     let syn::FnArg::Typed(pat) = i else {panic!("adadada")};
+    //     let syn::Type::Path(path) = &*pat.ty else {panic!("adad")};
+    //     let path = &path.path;
+    //     let arg = format!("arg_{}", n);
+    //     let stmt: syn::Stmt = syn::parse_quote!{
+    //         let #arg = <#path as ArgParse>::arg_parse(args[#n])?;
+    //     };
+    //     parse_method.block.stmts.push(stmt);
+    // };
+
+    //parse_method.block.stmts.push(syn::parse_quote!{Ok(())});
+    let name = &function.sig.ident;
+    let name = format!("{}_parse", name);
+    let name: syn::Ident = syn::parse_str(&name).unwrap();
+    let arg_count = inputs.len() - 1;
+    let mut parse_method: syn::ImplItemMethod = syn::parse_quote!{
+        pub fn #name (context: &mut CommandContext, args: Vec<String>) -> Result<()> {
+            use anyhow::anyhow;
+            if args.len() != #arg_count {
+                return Err(anyhow!("invalid argument count!"));
+            }
+
+            
+        }
+    };
+
+    let ident = &function.sig.ident;
+    let mut caller = syn::ExprCall {
+        func: Box::new(syn::parse_quote!{Self::#ident}),
+        args: Punctuated::new(),
+        attrs: Vec::new(),
+        paren_token: syn::token::Paren::default(),
+    };
+    caller.args.push(syn::parse_quote!{context});
+
+    for (n,i) in inputs.iter().skip(1).enumerate() {
+        let syn::FnArg::Typed(pat) = i else {panic!("adadada")};
+        let syn::Type::Path(path) = &*pat.ty else {panic!("adad")};
+        let arg: syn::Ident = syn::parse_str(&format!("arg{}", n)).unwrap();
+        let stmt: syn::Stmt = syn::parse_quote!{
+            let #arg = <#path as ArgParse>::arg_parse(&args[#n])?;
+        };
+        parse_method.block.stmts.push(stmt);
+        caller.args.push(syn::parse_quote!{ #arg });
+    };
+    parse_method.block.stmts.push(syn::parse_quote!{#caller?;});
+    parse_method.block.stmts.push(syn::parse_quote!{ return Ok(()); });
+
+    quote!{
+        #function
+        #parse_method
+    }.into()
+    
 }
 
 
