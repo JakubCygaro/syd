@@ -1,7 +1,7 @@
-use std::{collections::{HashSet, HashMap}, clone, str::FromStr};
+use std::{collections::{HashSet}, str::FromStr};
 
 use anyhow::{Result, anyhow};
-
+ 
 pub struct CommandHandler {
     commands: HashSet<Command>,
     manager: EventsManager

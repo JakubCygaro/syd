@@ -1,16 +1,7 @@
 use std::fmt::Display;
-
-use crate::starth;
-
 use super::*;
-use schema::events;
-use diesel::prelude::*;
-use anyhow::Result;
-
 use chrono::{
     self,
-    Utc,
-    DateTime,
     Weekday
 };
 

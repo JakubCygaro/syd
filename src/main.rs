@@ -1,7 +1,5 @@
 pub mod modules;
 
-use std::ops::Index;
-
 use syd::commands::*;
 use syd::*;
 
@@ -37,7 +35,7 @@ fn main() {
 }
 
 fn startup_message() {
-    println!("==|SYD 0.1|==");
+    println!("==|SYD 1.0|==");
     println!("type `.quit` to exit the program.");
     println!("type `.commands` to get all commands.");
 }

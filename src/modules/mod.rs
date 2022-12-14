@@ -1,5 +1,3 @@
-use std::env::args;
-
 use chrono::{Weekday, NaiveTime};
 use syd::NewWeekEvent;
 use syd::commands::CommandContext;
@@ -18,7 +16,7 @@ pub struct GeneralModule;
 #[command_module]
 impl GeneralModule {
     #[command]
-    #[command_description("lists all database entries")]
+    #[command_description("Lists all database entries.")]
     pub fn all(context: &mut CommandContext) -> Result<()> {
 
         let mut events = context.manager().get_all()?;
@@ -30,7 +28,7 @@ impl GeneralModule {
         Ok(())
     }
     #[command]
-    #[command_description("day, name, is_lecture, start hour, end hour")]
+    #[command_description("Add an entry to the timetable.")]
     pub fn add(context: &mut CommandContext, 
         day: Weekday, 
         name: String, 
@@ -68,14 +66,14 @@ pub struct GetModule;
 #[command_group("get")]
 impl GetModule {
     #[command]
-    #[command_description("looks for an entry with provided id")]
+    #[command_description("Looks for an entry with provided id.")]
     pub fn id(context: &mut CommandContext, id: i32) -> Result<()> {
         let event = context.manager().get_event(id)?;
         println!("{}", event);
         Ok(())
     }
     #[command]
-    #[command_description("gets entries by day")]
+    #[command_description("/gets entries by day.")]
     pub fn day(context: &mut CommandContext, day: Weekday) -> Result<()> {
         let mut ev = context.manager().by_day(day)?;
         ev.sort_by(|a, b| a.starth.cmp(&b.starth));
@@ -83,7 +81,7 @@ impl GetModule {
         Ok(())
     }
     #[command]
-    #[command_description("gets entries by start hour")]
+    #[command_description("Gets entries by start hour")]
     pub fn starth(context: &mut CommandContext, starth: NaiveTime) -> Result<()> {
         context.manager().by_starth(starth)?.print();
         Ok(())
@@ -97,7 +95,7 @@ impl TestModule {
 
     #[command]
     #[command_description("test command")]
-    pub fn test(context: &mut CommandContext, val: i32) -> Result<()> {
+    pub fn test(_context: &mut CommandContext, val: i32) -> Result<()> {
         println!("{} * 2 = {}!", val, val * 2);
         Ok(())
     }

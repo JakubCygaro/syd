@@ -13,7 +13,7 @@ pub struct Event {
     pub endh: String,
     pub is_lecture: i32,
 }
-
+#[allow(non_snake_case)]
 #[derive(Insertable, Clone)]
 #[diesel(table_name = events)]
 pub struct NewEvent {
