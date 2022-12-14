@@ -1,5 +1,8 @@
 # SYD
-A tool for querying into a database of my university week timetable or smth
+A tool for querying into a database of my weekly university schedule.
+
+## Diesel
+This thing was originaly planned as a playground for learning diesel but at the moment like 80% of the effort was spent writing macros, so actual client-side features are lacking at the moment.
 
 ## Command framework
 This thing uses custom macros to enable fast command writing without the need for writing my own parsing code.
