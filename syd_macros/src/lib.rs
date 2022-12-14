@@ -186,8 +186,7 @@ pub fn command_module(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
 fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
     if let syn::Type::Path(a) = &*ast.self_ty {
-        let mut methods = vec![];
-        for i in ast.items
+        let methods =  ast.items
                 .iter()
                 .filter_map(|x| match x {
                     syn::ImplItem::Method(m) => Some(m),
@@ -198,13 +197,7 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
                         a.path.segments.last().unwrap().ident == "command"
                     })
                 })
-        {
-            let args_count = get_args_count(&i.attrs);
-            let desc = get_description(&i.attrs);
-
-            methods.push((i, args_count, desc));
-        }
-        
+                .collect::<Vec<&syn::ImplItemMethod>>();        
         
         let mut init_method: syn::ImplItemMethod = syn::parse_quote!(
             fn init() -> Vec<Command> {
@@ -215,18 +208,18 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
         let impl_group = get_group(&ast.attrs);
         
         let mut stmts = vec![];
-        for (m, a, d) in methods {
+        for m in methods {
             let path = &m.sig.ident;
 
             let args_num;
-            if let Some(args) = a {
+            if let Some(args) = get_args_count(&m.attrs) {
                 let args = args as usize;
                 args_num = quote!{Some(#args)};
             } else {
                 args_num = quote!{None};
             }
             let description;
-            if let Some(desc) = d {
+            if let Some(desc) = get_description(&m.attrs) {
                 description = quote!{Some(#desc.to_owned())};
             } else {
                 description = quote!{None};
