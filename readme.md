@@ -1,44 +1,34 @@
 # SYD
 A tool for querying into a database of my university week timetable or smth
 
-## TODO
-Implement automatic command arguments detection and parsing via a macro-written custom parsing function, funtion parameters would have to implement a trait that allows parsing an argument from a string into the desired type like so:
+## Command framework
+This thing uses custom macros to enable fast command writing without the need for writing my own parsing code.
 
+## Example
+
+The `command_module` macro implemets the `CommandModule` trait for a chosen struct, by finding all methods decorated with the `command` attribute. The `command` macro handles all validation.
+ 
 ```rust
-trait ArgParse {
-    fn arg_parse(string: &str) -> Result<Self>;
-}
-impl ArgParse for i32 {
-    fn arg_parse(string: &str) -> Result<Self> {
-        string.parse()?
+#[command_module]
+impl Module {
+    #[command]
+    #[command_description("this is a test")]
+    pub fn test(context: &mut CommandContext, arg1: i32, arg2: i32) -> Result<()>{
+        Ok(())
     }
 }
+```
+`CommandContext` is a required argument for a command function as it provides access to ORM features of this program.
 
+You can also use the `command_group` macro to specify that a command must be preceeded by the name of a group that it belongs to:
+
+```rust
 #[command]
-pub fn command(context: &mut CommandContext, id: i32) -> Result<()>;
-
-//parsing function that would be inside the Command struct
-pub fn parse_cmd_args(&self, context: &mut CommandContext, args: Vec<String>) -> Result<()> {
-    if args.len() != 1 {
-        return Err(anyhow!("invalid argument count!"));
-    }
-    let arg0 = <i32 as ArgParse>::arg_parse(arg[0])?;
-    //... other args here
-
-    Self::command(&mut context, arg0)?
+#[command_group("kwas")]
+pub fn test(context: &mut CommandContext) -> Result<()> {
+    println!("Hello!");
+    Ok(())
 }
 ```
-I would have to add a `#[command]` macro that would tell the `#[command_module]` macro what
-methods are supposed to actually be made into commands. Methods with the `#[command]` macro
-would then be analyzed and if all their parameters implement the `ArgParse` trait, a parsing
-function would be written that actually calls the target method of the command.
-
-```rust
-struct Command {
-    pub name: String,
-    pub group: Option<String>,
-    pub args_num: Option<usize>, // <- this would probably need to go
-    pub parse: Box<dyn Fn(&mut CommandContext, Vec<String>) -> Result<()>>, // <- this is   where the command arguments are parsed and the function called.
-}
-```
-As a result the `#[command_ars]` macro would become obsolete
+To call this command through a `CommandHandler` you'd have to type: 
+`kwas test`, not just `test`.

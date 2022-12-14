@@ -311,51 +311,6 @@ fn get_description(attrs: &Vec<Attribute>) -> Option<String> {
     None
 }
 
-/// Tells the `CommandHandler` how many arguments this command will require.
-///⣀⣠⣤⣤⣤⣤⢤⣤⣄⣀⣀⣀⣀⡀⡀⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄
-///⠄⠉⠹⣾⣿⣛⣿⣿⣞⣿⣛⣺⣻⢾⣾⣿⣿⣿⣶⣶⣶⣄⡀⠄⠄⠄
-///⠄⠄⠠⣿⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣯⣿⣿⣿⣿⣿⣿⣆⠄⠄
-///⠄⠄⠘⠛⠛⠛⠛⠋⠿⣷⣿⣿⡿⣿⢿⠟⠟⠟⠻⠻⣿⣿⣿⣿⡀⠄
-///⠄⢀⠄⠄⠄⠄⠄⠄⠄⠄⢛⣿⣁⠄⠄⠒⠂⠄⠄⣀⣰⣿⣿⣿⣿⡀
-///⠄⠉⠛⠺⢶⣷⡶⠃⠄⠄⠨⣿⣿⡇⠄⡺⣾⣾⣾⣿⣿⣿⣿⣽⣿⣿
-///⠄⠄⠄⠄⠄⠛⠁⠄⠄⠄⢀⣿⣿⣧⡀⠄⠹⣿⣿⣿⣿⣿⡿⣿⣻⣿
-///⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠉⠛⠟⠇⢀⢰⣿⣿⣿⣏⠉⢿⣽⢿⡏
-///⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠠⠤⣤⣴⣾⣿⣿⣾⣿⣿⣦⠄⢹⡿⠄
-///⠄⠄⠄⠄⠄⠄⠄⠄⠒⣳⣶⣤⣤⣄⣀⣀⡈⣀⢁⢁⢁⣈⣄⢐⠃⠄
-///⠄⠄⠄⠄⠄⠄⠄⠄⠄⣰⣿⣛⣻⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡯⠄⠄
-///⠄⠄⠄⠄⠄⠄⠄⠄⠄⣬⣽⣿⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠁⠄⠄
-///⠄⠄⠄⠄⠄⠄⠄⠄⠄⢘⣿⣿⣻⣛⣿⡿⣟⣻⣿⣿⣿⣿⡟⠄⠄⠄
-///⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠛⢛⢿⣿⣿⣿⣿⣿⣿⣷⡿⠁⠄⠄⠄
-///⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠉⠉⠉⠉⠈⠄⠄⠄⠄⠄⠄
-#[proc_macro_attribute]
-pub fn command_args(args: TokenStream, item: TokenStream) -> TokenStream {
-    let method_ast = syn::parse_macro_input!(item as syn::ItemFn);
-    let args_ast = syn::parse_macro_input!(args as syn::AttributeArgs);
-
-    impl_command_args(&method_ast, &args_ast)
-}
-
-fn impl_command_args(function: &syn::ItemFn, args: &Vec<syn::NestedMeta>) -> TokenStream {
-    if args.len() != 1 {
-        panic!("the `command_args` macro must contain only one argument of type usize");
-    }
-    let Some(syn::NestedMeta::Lit(nested)) = args.first() else 
-        { panic!("failed parsing attribute argument") };
-    let syn::Lit::Int(lit) = nested else 
-        { panic!("failed parsing attribute argument") };
-    lit.base10_parse::<usize>().expect("macro argument must be of type usize");
-
-    //enforce that there is only one attribute of this type used
-    let attrs = &function.attrs;
-    if attrs.iter()
-        .any(|a| a.path.segments.last().unwrap().ident == "command_args") {
-            panic!("this attribute can only be used once.")
-    }
-
-    quote!{
-        #function
-    }.into()
-}
 
 #[proc_macro_attribute]
 pub fn command_description(args: TokenStream, item: TokenStream) -> TokenStream {
