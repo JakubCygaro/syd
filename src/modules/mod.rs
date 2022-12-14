@@ -2,11 +2,7 @@ use std::env::args;
 
 use chrono::{Weekday, NaiveTime};
 use syd::NewWeekEvent;
-use syd::commands::{
-    Command,
-    CommandModule,
-    CommandContext
-};
+use syd::commands::CommandContext;
 use syd::models::transformed::{
     WeekEvent,
 };
@@ -36,11 +32,11 @@ impl GeneralModule {
     #[command]
     #[command_description("day, name, is_lecture, start hour, end hour")]
     pub fn add(context: &mut CommandContext, 
-        day: chrono::Weekday, 
+        day: Weekday, 
         name: String, 
         is_lecture: bool,
-        starth: chrono::NaiveTime,
-        endh: chrono::NaiveTime) -> Result<()> {
+        starth: NaiveTime,
+        endh: NaiveTime) -> Result<()> {
         let new = NewWeekEvent{
             day: day,
             name: name,
@@ -80,7 +76,7 @@ impl GetModule {
     }
     #[command]
     #[command_description("gets entries by day")]
-    pub fn day(context: &mut CommandContext, day: chrono::Weekday) -> Result<()> {
+    pub fn day(context: &mut CommandContext, day: Weekday) -> Result<()> {
         let mut ev = context.manager().by_day(day)?;
         ev.sort_by(|a, b| a.starth.cmp(&b.starth));
         ev.print();
@@ -88,7 +84,7 @@ impl GetModule {
     }
     #[command]
     #[command_description("gets entries by start hour")]
-    pub fn starth(context: &mut CommandContext, starth: chrono::NaiveTime) -> Result<()> {
+    pub fn starth(context: &mut CommandContext, starth: NaiveTime) -> Result<()> {
         context.manager().by_starth(starth)?.print();
         Ok(())
     }

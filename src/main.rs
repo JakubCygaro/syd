@@ -1,5 +1,7 @@
 pub mod modules;
 
+use std::ops::Index;
+
 use syd::commands::*;
 use syd::*;
 
@@ -20,15 +22,7 @@ fn main() {
             ".quit" => break,
             ".commands" => {
                 for inf in handler.commands_info() {
-                    if let Some(g) = inf.group {
-                        print!("{} ", g);
-                    }
-                    print!("{}: ", inf.name);
-                    for i in 0..inf.args {
-                        print!("arg{} ", i);
-                    }
-                    print!("-> {}", inf.desc);
-                    println!();
+                    print_command_info(&inf);
                 }
             },
             _ => {
@@ -46,4 +40,24 @@ fn startup_message() {
     println!("==|SYD 0.1|==");
     println!("type `.quit` to exit the program.");
     println!("type `.commands` to get all commands.");
+}
+
+fn print_command_info(info: &syd::commands::CommandInfo) {
+    println!();
+    println!("Description: {}", info.desc);
+    if let Some(g) = &info.group {
+        print!("{} ", g);
+    }
+    print!("{} ", info.name);
+    
+    let mut sig = "(".to_owned();
+    for i in &info.args {
+        sig.push_str(format!("{}: {}, ", i.name, i.ty).as_str());
+    }
+    if let Some(index) = sig.rfind(','){
+        sig.remove(index);
+    }
+    print!("{}", sig);
+    print!(")");
+    println!();
 }

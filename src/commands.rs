@@ -44,7 +44,7 @@ impl CommandHandler {
             name: name.into(),
             desc: None,
             group: group,
-            args_num: None,
+            args: vec![],
             function: Box::new(|_, _|{Ok(())})
         });
         Ok(())
@@ -121,7 +121,7 @@ impl CommandHandler {
                 name: &cmd.name.as_str(),
                 desc: desc,
                 group: group,
-                args: cmd.args_num.unwrap_or(0),
+                args: cmd.args.clone(),
             });
         }
         ret.sort();
@@ -133,8 +133,14 @@ pub struct Command {
     pub name: String,
     pub group: Option<String>,
     pub desc: Option<String>,
-    pub args_num: Option<usize>,
+    pub args: Vec<CommandArg>,
     pub function: Box<dyn Fn(&mut CommandContext, Vec<String>) -> Result<()>>
+}
+
+#[derive(Debug, Clone, Ord, PartialEq, PartialOrd, Eq)]
+pub struct CommandArg {
+    pub name: String,
+    pub ty: String,
 }
 use std::hash::{Hash, Hasher};
 
@@ -167,12 +173,12 @@ pub trait CommandModule {
     fn init() -> Vec<Command>;
 }
 
-#[derive(Ord, PartialEq, PartialOrd, Eq)]
+#[derive(Debug, Clone, Ord, PartialEq, PartialOrd, Eq)]
 pub struct CommandInfo<'a> {
     pub name: &'a str,
     pub desc: String,
     pub group: Option<String>,
-    pub args: usize,
+    pub args: Vec<CommandArg>,
 }
 
 pub trait ArgParse 

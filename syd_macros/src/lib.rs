@@ -74,6 +74,7 @@ fn impl_command(function: &syn::ImplItemMethod) -> TokenStream {
     let name: syn::Ident = syn::parse_str(&name).unwrap();
     let arg_count = inputs.len() - 1;
     let mut parse_method: syn::ImplItemMethod = syn::parse_quote!{
+        #[doc(hidden)]
         pub fn #name (context: &mut CommandContext, args: Vec<String>) -> Result<()> {
             use anyhow::anyhow;
             use syd::commands::ArgParse;
@@ -211,13 +212,7 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
         for m in methods {
             let path = &m.sig.ident;
 
-            let args_num;
-            if let Some(args) = get_args_count(&m.attrs) {
-                let args = args as usize;
-                args_num = quote!{Some(#args)};
-            } else {
-                args_num = quote!{None};
-            }
+            let args = get_args(&m.sig.inputs);
             let description;
             if let Some(desc) = get_description(&m.attrs) {
                 description = quote!{Some(#desc.to_owned())};
@@ -236,10 +231,11 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
                     name: stringify!(#path).into(),
                     group: #group,
                     desc: #description,
-                    args_num: #args_num,
+                    args: args,
                     function: Box::new(Self::#ident),
                 });
             };
+            stmts.extend(args);
             stmts.push(stmt);
         }
         init_method.block.stmts.extend(stmts);
@@ -258,6 +254,7 @@ fn impl_command_module(ast: &syn::ItemImpl) -> TokenStream {
         trait_impl.items.push(syn::ImplItem::Method(init_method));
 
         quote!{
+            use syd::commands::*;
             #ast
             #trait_impl
         }.into()
@@ -281,17 +278,23 @@ fn get_group(attrs: &Vec<Attribute>) -> Option<String> {
     None
 }
 
-fn get_args_count(attrs: &Vec<Attribute>) -> Option<i32> {
-    let valid = attrs.iter()
-        .filter(|a| a.path.segments.last()
-            .unwrap().ident == "command_args")
-        .collect::<Vec<&Attribute>>();
-    if let Some(first) = valid.first() {
-        let Ok(syn::Lit::Int(count)) 
-            = first.parse_args() else { panic!("failed parsing arg count")};
-        return Some(count.base10_parse::<i32>().unwrap());
+fn get_args(input: &Punctuated<syn::FnArg, syn::token::Comma>) -> Vec<syn::Stmt> {
+    let mut stmts: Vec<syn::Stmt> = vec![];
+    stmts.push(syn::parse_quote!{
+        let mut args: Vec<CommandArg> = vec![];
+    });
+    for arg in input.iter().skip(1) {
+        let syn::FnArg::Typed(t) = arg else { panic!("todo") };
+        let name = &*t.pat;
+        let ty = &*t.ty;
+        stmts.push(syn::parse_quote!{
+            args.push(CommandArg{
+                name: stringify!(#name).to_owned(),
+                ty: stringify!(#ty).to_owned(),
+            });
+        });
     }
-    None
+    stmts
 }
 
 fn get_description(attrs: &Vec<Attribute>) -> Option<String> {
