@@ -50,13 +50,13 @@ impl CommandHandler {
         Ok(())
     }
     pub fn handle(&mut self, input: String) -> Result<()> {
-        let mut args = input.split_ascii_whitespace()
-            .map(|a| a.to_owned())
-            .collect::<Vec<String>>();
+        let mut args = Self::parse_input(input)?;
         if args.is_empty() {
             return Err(anyhow::anyhow!("No arguments found in input stream!"));
         }
-
+        //DEBUG
+        //println!("{:?}", args);
+        //DEBUG 
         let first = args.get(0)
             .ok_or_else(|| anyhow!("First argument not found! (wtf?)"))?
             .to_owned();
@@ -77,12 +77,6 @@ impl CommandHandler {
                                     .ok_or_else(|| anyhow!("Command not found!"))?;
             args.remove(0);
             args.remove(0);
-            // if let Some(count) = command.args_num {
-            //     if args.len() != count {
-            //         return Err(anyhow::anyhow!("Invalid argument count! (expected {})", 
-            //                                                                 count))
-            //     }
-            // }
             let mut context = CommandContext {
                 manager: &mut self.manager,
             };
@@ -96,17 +90,44 @@ impl CommandHandler {
                         .ok_or_else(|| anyhow!("Command not found!"))?;
             args.remove(0);
 
-            // if let Some(count) = command.args_num {
-            //     if args.len() != count {
-            //         return Err(anyhow::anyhow!("Invalid argument count! (expected {})", 
-            //                                                                 count))
-            //     }
-            // }
             let mut context = CommandContext {
                 manager: &mut self.manager,
             };
             (command.function)(&mut context, args)
         }
+    }
+
+    fn parse_input(input: String) -> Result<Vec<String>> {
+        let mut args = vec![];
+        let mut arg = String::new();
+        let mut input = input.chars();
+        loop {
+            let Some(c) = input.next() else 
+            {
+                if !arg.is_empty() {
+                    args.push(arg);
+                }
+                break;
+            };
+            if c.is_whitespace(){
+                args.push(arg.clone());
+                arg.clear();
+            } else if c == '"' {
+                loop{
+                    let Some(c)= input.next() else {
+                        return Err(anyhow!("premature end of input"));
+                    };
+                    if c == '"' {
+                        break;
+                    } else {
+                        arg.push(c);
+                    }
+                }
+            } else {
+                arg.push(c);
+            }
+        }
+        Ok(args)
     }
 
     pub fn commands_info(&self) -> Vec<CommandInfo> {
