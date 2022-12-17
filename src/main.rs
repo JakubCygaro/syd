@@ -42,10 +42,6 @@ fn startup_message() {
 
 fn print_command_info(info: &syd::commands::CommandInfo) {
     println!();
-    println!("Description: {}", info.desc);
-    if let Some(g) = &info.group {
-        print!("{} ", g);
-    }
     print!("{} ", info.name);
     
     let mut sig = "(".to_owned();
@@ -57,5 +53,10 @@ fn print_command_info(info: &syd::commands::CommandInfo) {
     }
     print!("{}", sig);
     print!(")");
+    
+    println!("Description: {}", info.desc);
+    if let Some(g) = &info.group {
+        print!("{} ", g);
+    }
     println!();
 }

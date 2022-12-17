@@ -58,23 +58,23 @@ impl EventsManager {
         Ok(event.into())
     }
 
-    pub fn get_events(&mut self, event: WeekEvent) -> Result<Vec<WeekEvent>>{
-        let event: Event = event.into();
-        let found = events
-            .filter(id.eq(event.id))
-            .or_filter(name.eq(event.name))
-            .or_filter(day.eq(event.day))
-            .or_filter(starth.eq(event.starth))
-            .or_filter(endh.eq(event.endh))
-            .or_filter(isLecture.eq(event.is_lecture))
-            .load::<Event>(&mut self.connection)?;
+    // pub fn get_events(&mut self, event: WeekEvent) -> Result<Vec<WeekEvent>>{
+    //     let event: Event = event.into();
+    //     let found = events
+    //         .filter(id.eq(event.id))
+    //         .or_filter(name.eq(event.name))
+    //         .or_filter(day.eq(event.day))
+    //         .or_filter(starth.eq(event.starth))
+    //         .or_filter(endh.eq(event.endh))
+    //         .or_filter(isLecture.eq(event.is_lecture))
+    //         .load::<Event>(&mut self.connection)?;
 
-        let ret: Vec<WeekEvent> = found.into_iter()
-        .map(|e| e.into())
-        .collect();
+    //     let ret: Vec<WeekEvent> = found.into_iter()
+    //     .map(|e| e.into())
+    //     .collect();
 
-        Ok(ret)
-    }
+    //     Ok(ret)
+    // }
     pub fn by_day(&mut self, weekday: chrono::Weekday) -> Result<Vec<WeekEvent>>{
         let found = events.filter(day.eq(weekday.to_string()))
             .load::<Event>(&mut self.connection)?;
@@ -87,6 +87,30 @@ impl EventsManager {
                     .map(|e| e.into())
                     .collect::<Vec<WeekEvent>>()
                     .into())
+    }
+    pub fn by_endh(&mut self, hour: chrono::NaiveTime) -> Result<Vec<WeekEvent>> {
+        Ok(events.filter(endh.eq(hour.to_string()))
+                .load::<Event>(&mut self.connection)?
+                .into_iter()
+                .map(|e| e.into())
+                .collect::<Vec<WeekEvent>>()
+                .into())
+    }
+    pub fn by_name(&mut self, n: String) -> Result<Vec<WeekEvent>> {
+        Ok(events.filter(name.eq(n))
+                .load::<Event>(&mut self.connection)?
+                .into_iter()
+                .map(|e| e.into())
+                .collect::<Vec<WeekEvent>>()
+                .into())
+    }
+    pub fn by_is_lecture(&mut self, val: bool) -> Result<Vec<WeekEvent>> {
+        Ok(events.filter(isLecture.eq(val as i32))
+                .load::<Event>(&mut self.connection)?
+                .into_iter()
+                .map(|e| e.into())
+                .collect::<Vec<WeekEvent>>()
+                .into())
     }
     pub fn get_all(&mut self) -> Result<Vec<WeekEvent>> {
         let res = 
@@ -106,6 +130,12 @@ impl EventsManager {
             .values(event_s)
             .execute(&mut self.connection)?;
 
+        Ok(())
+    }
+    pub fn change_event(&mut self, updated_event: models::UpdatedWeekEvent) -> Result<()>{
+            diesel::update(events::table)
+                .set(&updated_event)
+                .execute(&mut self.connection)?;
         Ok(())
     }
 

@@ -43,6 +43,9 @@ impl Into<Event> for WeekEvent {
     }
 }
 
+
+
+#[derive(Debug, Clone)]
 pub struct NewWeekEvent {
     pub name: String,
     pub day: Weekday,

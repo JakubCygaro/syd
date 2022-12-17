@@ -223,6 +223,9 @@ impl ArgParse for String {
 
 impl ArgParse for bool {
     fn arg_parse(text: &str) -> Result<Self> {
+        if text.is_empty() {
+            return Ok(false);
+        }
         Ok(text.parse::<bool>()?)
     }
 }
@@ -236,6 +239,24 @@ impl ArgParse for chrono::Weekday {
 impl ArgParse for chrono::NaiveTime {
     fn arg_parse(text: &str) -> Result<Self> {
         Ok(chrono::NaiveTime::from_str(text)?)
+    }
+}
+
+impl ArgParse for u32 {
+    fn arg_parse(text: &str) -> Result<Self> {
+        Ok(text.parse::<u32>()?)
+    }
+}
+
+impl<T> ArgParse for Option<T> 
+where T: ArgParse
+{
+    fn arg_parse(text: &str) -> Result<Self> {
+        if text.is_empty() || text == "!" {
+            Ok(None)
+        } else {
+            Ok(Some(<T as ArgParse>::arg_parse(text)?))
+        }
     }
 }
 
