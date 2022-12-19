@@ -134,6 +134,7 @@ impl EventsManager {
     }
     pub fn change_event(&mut self, updated_event: models::UpdatedWeekEvent) -> Result<()>{
             diesel::update(events::table)
+                .filter(id.eq(updated_event.id))
                 .set(&updated_event)
                 .execute(&mut self.connection)?;
         Ok(())
