@@ -1,5 +1,5 @@
 # SYD
-A tool for querying into a database of my weekly university schedule.
+A tool for querying into a database of my weekly university schedule. (No longer in use)
 
 ## Diesel
 This thing was originaly planned as a playground for learning diesel but at the moment like 80% of the effort was spent writing macros, so actual client-side features are lacking at the moment.
